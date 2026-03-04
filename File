@@ -1,186 +1,171 @@
--- [[ MAID DRIVE EMPIRE AUTO FARM ]] --
--- Features: Supersonic Speeds, Hover, Anti-AFK, Speed Multiplier
+-- [[ CUCUR CATCHER HUB - Lock Teleport + Auto ATM ]] --
+-- Buat nangkap pembobol ATM di Driving Empire
 
-local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
-local guiName = "MaidDriveAutoFarm_V2"
+local guiName = "CucurCatcherHub_V2"
 
-local old = CoreGui:FindFirstChild(guiName) or player.PlayerGui:FindFirstChild(guiName)
-if old then old:Destroy() end
-
-local settings = {
-    Enabled = false,
-    Speed = 400,      
-    Height = 50,      
-    TurnSpeed = 2,    
-}
+-- Hapus GUI lama
+if player.PlayerGui:FindFirstChild(guiName) then player.PlayerGui[guiName]:Destroy() end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = guiName
-pcall(function() ScreenGui.Parent = CoreGui end)
-if not ScreenGui.Parent then ScreenGui.Parent = player.PlayerGui end
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-MainFrame.Position = UDim2.new(0.5, 160, 0.5, -100) 
-MainFrame.Size = UDim2.new(0, 250, 0, 300)
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.BorderSizePixel = 0
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 280, 0, 380)
+Main.Position = UDim2.new(0.7, 0, 0.3, 0)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
 
-local UICorner = Instance.new("UICorner", MainFrame)
-UICorner.CornerRadius = UDim.new(0, 10)
-
--- Glow/Stroke
-local UIStroke = Instance.new("UIStroke", MainFrame)
-UIStroke.Color = Color3.fromRGB(80, 80, 150)
-UIStroke.Thickness = 2
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", Main)
+stroke.Color = Color3.fromRGB(0, 255, 200)
+stroke.Thickness = 2
 
 -- Title
-local Title = Instance.new("TextLabel", MainFrame)
+local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
+Title.Text = "CUCUR CATCHER HUB"
+Title.TextColor3 = Color3.fromRGB(0, 255, 200)
 Title.Font = Enum.Font.GothamBlack
-Title.Text = "MAID MONEY FARM"
-Title.TextColor3 = Color3.fromRGB(0, 255, 255)
-Title.TextSize = 22
+Title.TextSize = 20
 
-local Status = Instance.new("TextLabel", MainFrame)
-Status.Position = UDim2.new(0,0,0.15,0)
-Status.Size = UDim2.new(1,0,0,20)
+-- Status
+local Status = Instance.new("TextLabel", Main)
+Status.Position = UDim2.new(0, 10, 0, 50)
+Status.Size = UDim2.new(1, -20, 0, 20)
 Status.BackgroundTransparency = 1
-Status.TextColor3 = Color3.fromRGB(150,150,150)
-Status.Text = "Idle..."
+Status.Text = "Idle - Pilih target"
+Status.TextColor3 = Color3.fromRGB(200, 200, 200)
 Status.Font = Enum.Font.Gotham
 
-local ToggleBtn = Instance.new("TextButton", MainFrame)
-ToggleBtn.Position = UDim2.new(0.1, 0, 0.25, 0)
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 45)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-ToggleBtn.Font = Enum.Font.GothamBlack
-ToggleBtn.Text = "START FARM"
-ToggleBtn.TextColor3 = Color3.new(1,1,1)
-ToggleBtn.TextSize = 20
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,8)
+-- Auto ATM Toggle
+local AutoATM = Instance.new("TextButton", Main)
+AutoATM.Position = UDim2.new(0.1, 0, 0.2, 0)
+AutoATM.Size = UDim2.new(0.8, 0, 0, 40)
+AutoATM.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+AutoATM.Text = "AUTO BOBOL ATM : OFF"
+AutoATM.TextColor3 = Color3.new(1,1,1)
+AutoATM.Font = Enum.Font.GothamBold
+Instance.new("UICorner", AutoATM).CornerRadius = UDim.new(0,8)
 
-local SpeedBtn = Instance.new("TextButton", MainFrame)
-SpeedBtn.Position = UDim2.new(0.1, 0, 0.5, 0)
-SpeedBtn.Size = UDim2.new(0.8, 0, 0, 30)
-SpeedBtn.BackgroundColor3 = Color3.fromRGB(60,60,70)
-SpeedBtn.Text = "Speed: 400 (Fast)"
-SpeedBtn.TextColor3 = Color3.new(1,1,1)
-SpeedBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", SpeedBtn)
+-- Lock Teleport Toggle
+local LockBtn = Instance.new("TextButton", Main)
+LockBtn.Position = UDim2.new(0.1, 0, 0.32, 0)
+LockBtn.Size = UDim2.new(0.8, 0, 0, 40)
+LockBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+LockBtn.Text = "LOCK TELEPORT : OFF"
+LockBtn.TextColor3 = Color3.new(1,1,1)
+LockBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", LockBtn).CornerRadius = UDim.new(0,8)
 
-local HeightBtn = Instance.new("TextButton", MainFrame)
-HeightBtn.Position = UDim2.new(0.1, 0, 0.65, 0)
-HeightBtn.Size = UDim2.new(0.8, 0, 0, 30)
-HeightBtn.BackgroundColor3 = Color3.fromRGB(60,60,70)
-HeightBtn.Text = "Height: 50 Studs"
-HeightBtn.TextColor3 = Color3.new(1,1,1)
-HeightBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", HeightBtn)
+-- Player List (Scrolling)
+local Scroll = Instance.new("ScrollingFrame", Main)
+Scroll.Position = UDim2.new(0.1, 0, 0.45, 0)
+Scroll.Size = UDim2.new(0.8, 0, 0, 180)
+Scroll.BackgroundColor3 = Color3.fromRGB(20,20,30)
+Scroll.ScrollBarThickness = 6
+Instance.new("UICorner", Scroll).CornerRadius = UDim.new(0,8)
 
-local CloseBtn = Instance.new("TextButton", MainFrame)
-CloseBtn.Position = UDim2.new(0.1, 0, 0.85, 0)
-CloseBtn.Size = UDim2.new(0.8, 0, 0, 30)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(30,10,10)
-CloseBtn.Text = "UNLOAD"
-CloseBtn.TextColor3 = Color3.fromRGB(255,80,80)
-CloseBtn.Font = Enum.Font.Gotham
-Instance.new("UICorner", CloseBtn)
+local UIList = Instance.new("UIListLayout", Scroll)
+UIList.Padding = UDim.new(0, 5)
 
-local speedIndex = 2
-local speedPresets = {
-    {100, "Slow"},
-    {200, "Average"},
-    {300, "Fast"},
-    {400, "Superspeed"},
-    {500, "Supersonic"},
-    {600, "Hyperspeed"},
-    {700, "Godspeed"}
-}
+local targetPlayer = nil
+local autoATMEnabled = false
+local lockEnabled = false
 
-SpeedBtn.MouseButton1Click:Connect(function()
-    speedIndex = speedIndex + 1
-    if speedIndex > #speedPresets then speedIndex = 1 end
-    
-    local preset = speedPresets[speedIndex]
-    settings.Speed = preset[1]
-    SpeedBtn.Text = "Speed: " .. preset[1] .. " (" .. preset[2] .. ")"
-end)
-
-HeightBtn.MouseButton1Click:Connect(function()
-    settings.Height = settings.Height + 10
-    if settings.Height > 100 then settings.Height = 10 end
-    HeightBtn.Text = "Height: " .. settings.Height .. " Studs"
-end)
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    settings.Enabled = not settings.Enabled
-    if settings.Enabled then
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 100)
-        ToggleBtn.Text = "RUNNING..."
-    else
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-        ToggleBtn.Text = "START FARM"
-        
-        local char = player.Character
-        if char then
-            local hum = char:FindFirstChild("Humanoid")
-            if hum and hum.SeatPart then
-                hum.SeatPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                hum.SeatPart.AssemblyAngularVelocity = Vector3.new(0,0,0)
+-- Fungsi Auto ATM (rob otomatis)
+local function startAutoATM()
+    spawn(function()
+        while autoATMEnabled and task.wait(0.3) do
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") and obj.Parent and (obj.Parent.Name:find("ATM") or obj.Parent:FindFirstChildWhichIsA("BillboardGui")) then
+                        local dist = (player.Character.HumanoidRootPart.Position - obj.Parent.Position).Magnitude
+                        if dist < 25 then
+                            fireproximityprompt(obj)
+                        end
+                    end
+                end
             end
         end
+    end)
+end
+
+-- Update Player List
+local function refreshPlayerList()
+    for _, child in pairs(Scroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
     end
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    settings.Enabled = false
-    ScreenGui:Destroy()
-end)
-
-RunService.Stepped:Connect(function()
-    if not settings.Enabled then return end
     
-    local char = player.Character
-    if not char then return end
-    
-    local humanoid = char:FindFirstChild("Humanoid")
-    if not humanoid then return end
-    
-    local seat = humanoid.SeatPart
-    
-    if seat and seat:IsA("VehicleSeat") then
-        Status.Text = "Active: " .. settings.Speed .. " spd"
-        Status.TextColor3 = Color3.fromRGB(0, 255, 100)
-        
-        local vehicle = seat.Parent 
-        local root = (vehicle:IsA("Model") and vehicle.PrimaryPart) or seat
-        
-        local look = root.CFrame.LookVector
-        
-        root.AssemblyLinearVelocity = Vector3.new(look.X * settings.Speed, 0, look.Z * settings.Speed)
-        
-        local currentPos = root.Position
-        if currentPos.Y < settings.Height then
-            root.AssemblyLinearVelocity = root.AssemblyLinearVelocity + Vector3.new(0, 50, 0)
-        elseif currentPos.Y > settings.Height + 10 then
-            root.AssemblyLinearVelocity = root.AssemblyLinearVelocity - Vector3.new(0, 10, 0)
-        else
-            root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z)
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= player then
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, -10, 0, 30)
+            btn.BackgroundColor3 = Color3.fromRGB(30,30,45)
+            btn.Text = plr.Name
+            btn.TextColor3 = Color3.new(1,1,1)
+            btn.Font = Enum.Font.Gotham
+            btn.Parent = Scroll
+            
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+            
+            btn.MouseButton1Click:Connect(function()
+                targetPlayer = plr
+                Status.Text = "Target: " .. plr.Name .. " (siap nangkap!)"
+                Status.TextColor3 = Color3.fromRGB(0, 255, 100)
+            end)
         end
-        
-        root.AssemblyAngularVelocity = Vector3.new(0, settings.TurnSpeed * 0.1, 0)
-        
-        seat.Throttle = 1
+    end
+    Scroll.CanvasSize = UDim2.new(0,0,0, UIList.AbsoluteContentSize.Y)
+end
+
+Players.PlayerAdded:Connect(refreshPlayerList)
+Players.PlayerRemoving:Connect(refreshPlayerList)
+refreshPlayerList()
+
+-- Toggle Auto ATM
+AutoATM.MouseButton1Click:Connect(function()
+    autoATMEnabled = not autoATMEnabled
+    if autoATMEnabled then
+        AutoATM.BackgroundColor3 = Color3.fromRGB(60, 255, 100)
+        AutoATM.Text = "AUTO BOBOL ATM : ON"
+        startAutoATM()
     else
-        Status.Text = "Sit in vehicle!"
-        Status.TextColor3 = Color3.fromRGB(255, 100, 100)
+        AutoATM.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+        AutoATM.Text = "AUTO BOBOL ATM : OFF"
     end
 end)
+
+-- Toggle Lock Teleport
+LockBtn.MouseButton1Click:Connect(function()
+    lockEnabled = not lockEnabled
+    if lockEnabled and targetPlayer then
+        LockBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 100)
+        LockBtn.Text = "LOCK TELEPORT : ON"
+    else
+        LockBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+        LockBtn.Text = "LOCK TELEPORT : OFF"
+    end
+end)
+
+-- Lock Teleport Logic (nge-follow target)
+RunService.Heartbeat:Connect(function()
+    if lockEnabled and targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        if myRoot then
+            local targetPos = targetPlayer.Character.HumanoidRootPart.Position
+            myRoot.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, -4)) -- ikut di belakang + atas
+            Status.Text = "Mengunci " .. targetPlayer.Name .. " (sedang ngejar!)"
+        end
+    end
+end)
+
+print("Cucur Catcher Hub Loaded! Selamat menangkap pembobol ATM 🚨")
