@@ -1,11 +1,12 @@
--- [[ CUCUR CATCHER HUB V3 - Auto ATM + Anti Police + Minimize ]] --
--- Update Maret 2026 - Fixed Auto ATM + Anti Police
+-- [[ CUCUR CATCHER HUB V4 - Auto ATM Outlaw Fix + Yellow Coin Detection ]] --
+-- Fixed: Cari ATM via BillboardGui / coin kuning, bukan ProximityPrompt saja
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
-local guiName = "CucurCatcherHub_V3"
+local guiName = "CucurCatcherHub_V4"
 
 if player.PlayerGui:FindFirstChild(guiName) then player.PlayerGui[guiName]:Destroy() end
 
@@ -36,7 +37,7 @@ Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
 local Title = Instance.new("TextLabel", Header)
 Title.Size = UDim2.new(1, -80, 1, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "CUCUR CATCHER HUB V3"
+Title.Text = "CUCUR CATCHER HUB V4"
 Title.TextColor3 = Color3.fromRGB(0, 255, 200)
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 20
@@ -53,7 +54,7 @@ MinimizeBtn.Font = Enum.Font.GothamBold
 MinimizeBtn.TextSize = 22
 Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0,8)
 
--- CONTENT FRAME (akan disembunyikan saat minimize)
+-- CONTENT
 local Content = Instance.new("Frame", Main)
 Content.Size = UDim2.new(1, 0, 1, -40)
 Content.Position = UDim2.new(0, 0, 0, 40)
@@ -64,7 +65,7 @@ local Status = Instance.new("TextLabel", Content)
 Status.Size = UDim2.new(1, -20, 0, 25)
 Status.Position = UDim2.new(0, 10, 0, 10)
 Status.BackgroundTransparency = 1
-Status.Text = "Idle - Pilih target atau nyalakan Auto ATM"
+Status.Text = "Idle - Pastikan role Outlaw & coin kuning muncul"
 Status.TextColor3 = Color3.fromRGB(200, 200, 200)
 Status.Font = Enum.Font.Gotham
 
@@ -104,33 +105,43 @@ local atmList = {}
 local currentATM = 1
 local minimized = false
 
--- ================== COLLECT ATM (FIXED & LEBIH AKURAT) ==================
+-- ================== COLLECT ATM via YELLOW COIN / BILLBOARD ==================
 local function collectATMs()
     atmList = {}
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            local parent = obj.Parent
-            if parent and (parent.Name:lower():find("atm") or 
-                           (obj.ActionText and (obj.ActionText:lower():find("rob") or obj.ActionText:lower():find("atm"))) or
-                           parent:FindFirstChildWhichIsA("BillboardGui")) then
-                
-                local posPart = parent.PrimaryPart or parent:FindFirstChild("HumanoidRootPart") or parent:FindFirstChildWhichIsA("BasePart")
+        if obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") then
+            local hasCoin = false
+            if obj:FindFirstChildWhichIsA("ImageLabel") and obj.ImageLabel.Image:lower():find("dollar") or obj.ImageLabel.Image:lower():find("coin") then
+                hasCoin = true
+            elseif obj:FindFirstChild("TextLabel") and (obj.TextLabel.Text:find("$") or obj.TextLabel.Text:lower():find("money") or obj.TextLabel.Text:lower():find("cash")) then
+                hasCoin = true
+            end
+            
+            if hasCoin then
+                local parentModel = obj:FindFirstAncestorWhichIsA("Model") or obj.Parent
+                local posPart = parentModel.PrimaryPart or parentModel:FindFirstChild("HumanoidRootPart") or parentModel:FindFirstChildWhichIsA("BasePart")
                 if posPart then
                     table.insert(atmList, {
                         pos = posPart.Position,
-                        prompt = obj,
-                        model = parent
+                        gui = obj,
+                        model = parentModel
                     })
                 end
             end
         end
+        
+        -- Backup: ProximityPrompt kalau masih ada di beberapa ATM
+        if obj:IsA("ProximityPrompt") and (obj.Parent.Name:lower():find("atm") or obj.ActionText:lower():find("rob") or obj.ActionText:lower():find("bust")) then
+            local posPart = obj.Parent.PrimaryPart or obj.Parent:FindFirstChildWhichIsA("BasePart")
+            if posPart then
+                table.insert(atmList, {pos = posPart.Position, prompt = obj})
+            end
+        end
     end
-    print("[CUCUR] Ditemukan " .. #atmList .. " ATM! Auto farm siap.")
+    print("[CUCUR V4] Ditemukan " .. #atmList .. " ATM (via coin kuning / gui)!")
 end
 
-collectATMs()  -- Collect saat script dijalankan
-
--- ================== AUTO ATM + ANTI POLISI ==================
+-- ================== AUTO BOBOL + ANTI POLISI ==================
 local atmConnection
 local function startAutoATM()
     if atmConnection then atmConnection:Disconnect() end
@@ -139,47 +150,60 @@ local function startAutoATM()
         if not autoATMEnabled then return end
         
         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-        if not myRoot or #atmList == 0 then return end
+        if not myRoot or #atmList == 0 then 
+            Status.Text = "No ATM found or not in Outlaw role!"
+            return 
+        end
         
         local current = atmList[currentATM]
         if not current then currentATM = 1 return end
         
-        -- TELEPORT KE ATM
-        myRoot.CFrame = CFrame.new(current.pos + Vector3.new(0, 8, 0))
+        -- TELEPORT DEKAT ATM (agar coin kuning muncul & interactable)
+        myRoot.CFrame = CFrame.new(current.pos + Vector3.new(0, 3, -2))  -- Depan sedikit
         
-        -- FIRE PROMPT (rob)
+        task.wait(0.4)  -- Tunggu load indicator
+        
+        -- Coba fire prompt kalau ada
         if current.prompt then
             pcall(function() fireproximityprompt(current.prompt) end)
         end
         
-        Status.Text = "Auto ATM: Robbing #" .. currentATM .. "/" .. #atmList
-        Status.TextColor3 = Color3.fromRGB(0, 255, 100)
+        -- Simulate click / interact (untuk sistem coin kuning yang butuh klik)
+        pcall(function()
+            VirtualUser:ClickButton1(Vector2.new(workspace.CurrentCamera.ViewportSize.X/2, workspace.CurrentCamera.ViewportSize.Y/2))
+            -- Atau hold kalau perlu: VirtualUser:Button1Down() ... wait ... Button1Up()
+        end)
         
-        -- ANTI POLISI: Cek player dekat
+        Status.Text = "Auto Robbing ATM #" .. currentATM .. "/" .. #atmList .. " (coin kuning)"
+        Status.TextColor3 = Color3.fromRGB(255, 215, 0)  -- Kuning seperti coin
+        
+        -- ANTI POLISI
         local policeNearby = false
         for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                local dist = (myRoot.Position - plr.Character.HumanoidRootPart.Position).Magnitude
-                if dist < 40 then
-                    policeNearby = true
-                    break
+            if plr ~= player and plr.Team and plr.Team.Name:lower():find("police") or plr.Team.Name:lower():find("security") then
+                if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (myRoot.Position - plr.Character.HumanoidRootPart.Position).Magnitude
+                    if dist < 40 then
+                        policeNearby = true
+                        break
+                    end
                 end
             end
         end
         
         if policeNearby then
-            currentATM = math.random(1, #atmList)  -- Pindah ke ATM random
-            Status.Text = "🚨 POLISI DETECTED! Pindah ke ATM lain..."
+            currentATM = math.random(1, #atmList)
+            Status.Text = "🚨 POLISI DEKAT! Pindah ATM random..."
             Status.TextColor3 = Color3.fromRGB(255, 100, 0)
-            task.wait(1)
+            task.wait(1.5)
         else
-            task.wait(1.8)  -- Waktu rob normal
+            task.wait(2.5)  -- Waktu bust ATM normal (sesuaikan kalau terlalu cepat/ lambat)
             currentATM = currentATM % #atmList + 1
         end
     end)
 end
 
--- ================== REFRESH PLAYER LIST ==================
+-- Refresh list player (lock teleport)
 local function refreshPlayerList()
     for _, child in pairs(Scroll:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
@@ -197,7 +221,7 @@ local function refreshPlayerList()
             
             btn.MouseButton1Click:Connect(function()
                 targetPlayer = plr
-                Status.Text = "Target: " .. plr.Name
+                Status.Text = "Target locked: " .. plr.Name
             end)
         end
     end
@@ -208,34 +232,34 @@ Players.PlayerAdded:Connect(refreshPlayerList)
 Players.PlayerRemoving:Connect(refreshPlayerList)
 refreshPlayerList()
 
--- ================== TOGGLE BUTTONS ==================
+-- Toggle Auto ATM
 AutoATM.MouseButton1Click:Connect(function()
     autoATMEnabled = not autoATMEnabled
     if autoATMEnabled then
         AutoATM.BackgroundColor3 = Color3.fromRGB(60, 255, 100)
         AutoATM.Text = "AUTO BOBOL ATM : ON"
-        collectATMs()  -- Refresh ATM list
-        startAutoATM()
+        collectATMs()  -- Scan ulang ATM
+        if #atmList == 0 then
+            Status.Text = "No ATM detected! Cek role Outlaw & coin kuning"
+        else
+            startAutoATM()
+        end
     else
         AutoATM.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
         AutoATM.Text = "AUTO BOBOL ATM : OFF"
         if atmConnection then atmConnection:Disconnect() end
-        Status.Text = "Auto ATM dimatikan"
+        Status.Text = "Stopped"
     end
 end)
 
+-- Toggle Lock
 LockBtn.MouseButton1Click:Connect(function()
     lockEnabled = not lockEnabled
-    if lockEnabled and targetPlayer then
-        LockBtn.BackgroundColor3 = Color3.fromRGB(60, 255, 100)
-        LockBtn.Text = "LOCK TELEPORT : ON"
-    else
-        LockBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-        LockBtn.Text = "LOCK TELEPORT : OFF"
-    end
+    LockBtn.BackgroundColor3 = lockEnabled and Color3.fromRGB(60, 255, 100) or Color3.fromRGB(255, 60, 60)
+    LockBtn.Text = "LOCK TELEPORT : " .. (lockEnabled and "ON" or "OFF")
 end)
 
--- Lock Teleport (tetap sama seperti V2)
+-- Lock logic
 RunService.Heartbeat:Connect(function()
     if lockEnabled and targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -246,18 +270,12 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ================== MINIMIZE BUTTON ==================
+-- Minimize
 MinimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
-    if minimized then
-        MinimizeBtn.Text = "＋"
-        Content.Visible = false
-        Main.Size = UDim2.new(0, 290, 0, 45)  -- Hanya header
-    else
-        MinimizeBtn.Text = "−"
-        Content.Visible = true
-        Main.Size = UDim2.new(0, 290, 0, 400)
-    end
+    MinimizeBtn.Text = minimized and "＋" or "−"
+    Content.Visible = not minimized
+    Main.Size = minimized and UDim2.new(0, 290, 0, 45) or UDim2.new(0, 290, 0, 400)
 end)
 
-print("✅ Cucur Catcher Hub V3 Loaded! Auto ATM sudah fix + Anti Police + Minimize")
+print("✅ V4 Loaded! Auto ATM via yellow coin fixed. Nyalakan saat role Outlaw!")
